@@ -11,7 +11,7 @@ gender_stroke_crosstab = pd.crosstab(df['gender'], df['stroke'])
 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
 
 # Plot of the number of people who had stroke by gender
-bars = axes[0].bar(gender_stroke_crosstab.index, gender_stroke_crosstab[1].values, color=['blue', 'pink'])
+bars = axes[0].bar(gender_stroke_crosstab.index, gender_stroke_crosstab[1].values, color=['pink', 'blue'])
 
 axes[0].set_ylabel('Stroke Count')
 axes[0].set_title('Stroke Count by Gender')
@@ -46,12 +46,144 @@ if p > 0.05:
                  bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
 
 else:
-    axes[0].text(-1.2, -0.2, f'Chi-Square Test:\n\n\u03B1: 0.05,  P-Value: {p:.2f}\n'
+    axes[0].text(-1.2, -0.2, f'Chi-Square Test:\n', transform=axes[1].transAxes,
+                 fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                 fontweight='bold')
+
+    axes[0].text(-1.2, -0.3, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
                              f'P-Value < \u03B1 ---> There a significant association between gender and stroke',
                  transform=axes[1].transAxes,
                  fontsize=8, verticalalignment='bottom', horizontalalignment='left',
-                 bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='lightgray'))
+                 bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
 
 plt.tight_layout()
 plt.show()
 
+
+"""Stroke Age Group Correlation"""
+
+# Define a function to label age groups
+def age_group_label(age):
+    if age < 50:
+        return 'under 50'
+    elif 50 <= age < 70:
+        return '50-70'
+    else:
+        return 'above 70'
+
+
+# Create a new dataframe -- age group vs. stroke occurrences
+df['age_group'] = df['age'].apply(age_group_label)
+df_grouped_as = df.groupby(['age_group', 'stroke']).size().unstack(
+    fill_value=0)  # df_grouped_as -- 'as' stands for age stroke
+
+df_grouped_as.columns = ['No Stroke Count', 'Stroke Count']
+df_grouped_as.sort_values(by='Stroke Count', inplace=True)
+
+# Plot of total stroke occurrences by age groups
+ax_age = df_grouped_as.plot(kind='bar', stacked=False, figsize=(6, 5))
+ax_age.set_title('Stroke Occurrences Counts by Age Groups', fontdict={'fontsize': 9})
+ax_age.set_xlabel('')
+ax_age.set_ylabel('Count')
+ax_age.set_xticklabels(df_grouped_as.index, rotation=0)
+ax_age.legend(['No Stroke', 'Stroke'], loc='upper right')
+
+# Text values above the bars
+for container in ax_age.containers:
+    ax_age.bar_label(container, label_type='edge')
+
+# Perform Chi-Square Test of Independence to get p-value
+_, p, _, _ = chi2_contingency(df_grouped_as)
+
+if p > 0.05:
+    ax_age.text(0, -0.15, f'Chi-Square Test:\n', transform=ax_age.transAxes,
+                fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                fontweight='bold')
+
+    ax_age.text(0, -0.3, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                         f'P-Value > \u03B1 ---> There is no significant association between age and stroke',
+                transform=ax_age.transAxes,
+                fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+else:
+    ax_age.text(0, -0.15, f'Chi-Square Test:', transform=ax_age.transAxes,
+                fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                fontweight='bold')
+
+    ax_age.text(0, -0.3, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                         f'P-Value > \u03B1 ---> There a significant association between age and stroke',
+                transform=ax_age.transAxes,
+                fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+plt.tight_layout()
+plt.show()
+
+"""P-value for strokes by age groups implies that there is an association between them. Therefor the gender is being 
+added as variable to try to converge on a specific predication according to gender"""
+
+# new column 'gender+age group creation'
+df['gender'] = df['gender'].apply(lambda x: x[0])  # taking the first letter of the gender
+df['Gender + Age Group'] = df['gender'] + ' ' + df['age_group'].astype(str)
+df_grouped_gas = df.groupby(['Gender + Age Group', 'stroke']).size().unstack(fill_value=0) # df_grouped_gas -- 'gas' stands for gender, age, stroke
+df_grouped_gas.columns = ['No Stroke Count', 'Stroke Count']
+df_grouped_gas.sort_values(by='Stroke Count', inplace=True)
+
+# Visualization
+fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 6))
+# Plot of total stroke occurrences by gender+age groups
+ax = df_grouped_gas.plot(kind='bar', stacked=False, figsize=(12, 6), ax=axes[0])
+ax.set_title('Stroke Occurrences Counts by Gender and Age Group', fontdict={'fontsize': 9})
+ax.set_xlabel('')
+ax.set_ylabel('Count')
+ax.set_xticklabels(df_grouped_gas.index, rotation=45, fontdict={'fontsize': 8})
+ax.legend(['No Stroke', 'Stroke'], loc='upper right')
+
+# Text values above the bars
+for container in ax.containers:
+    ax.bar_label(container, label_type='edge')
+
+# Adding proportion on stroke/no stroke from total occurrences for each gender+age group
+# Visualization of proportions
+df_proportions = df_grouped_gas.div(df_grouped_gas.sum(axis=1), axis=0)
+ax_proportions = df_proportions.plot(kind='bar', stacked=False, figsize=(12, 6), ax=axes[1])
+ax_proportions.set_title('Proportion of Stroke Occurrences Counts by Gender and Age Group', fontdict={'fontsize': 9})
+ax_proportions.set_xlabel('')
+ax_proportions.set_ylabel('Proportion')
+ax_proportions.set_xticklabels(df_proportions.index, rotation=45, fontdict={'fontsize': 8})
+ax_proportions.set_ybound(upper=1.2)
+ax_proportions.legend(['No Stroke', 'Stroke'], bbox_to_anchor=(1, 1), loc='upper right')
+
+# Add text values above the bars
+for container in ax_proportions.containers:
+    ax_proportions.bar_label(container, label_type='edge', fmt='%.2f')
+
+# Perform Chi-Square Test of Independence
+chi2, p, dof, expected = chi2_contingency(df_grouped_gas)
+
+# Determine if null hypothesis is rejected
+if p > 0.05:
+    ax.text(0, 0, f'Chi-Square Test:\n', transform=ax.transAxes,
+            fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+            fontweight='bold')
+
+    ax.text(0, 0, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                  f'P-Value > \u03B1 ---> There is no significant association between age and stroke',
+            transform=ax.transAxes,
+            fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+            bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+else:
+    ax.text(0, -0.28, f'Chi-Square Test:', transform=ax.transAxes,
+            fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+            fontweight='bold')
+
+    ax.text(0, -0.42, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                      f'P-Value > \u03B1 ---> There a significant association between age and stroke',
+            transform=ax.transAxes,
+            fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+            bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+plt.tight_layout()
+plt.show()

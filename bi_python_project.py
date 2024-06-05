@@ -381,6 +381,66 @@ plt.tight_layout()
 plt.show()
 
 # --------------------------------------------------------------------------------------------------
+""" Stroke and Marital Status Correlation """
+
+marital_stroke_df = df[['ever_married', 'stroke']]
+marital_stroke_df['stroke'] = marital_stroke_df.loc[:, 'stroke'].replace({0: 'No Stroke', 1: 'Stroke'})
+marital_stroke_df['ever_married'] = marital_stroke_df.loc[:, 'ever_married'].replace({'Yes': 'Married/Was Married', 'No': 'Never Been Married'})
+marital_stroke_df = marital_stroke_df.value_counts()
+marital_stroke_croostab = pd.crosstab(df['ever_married'], df['stroke'])
+marital_stroke_df_norm = marital_stroke_croostab.div(marital_stroke_croostab.sum(axis=1), axis=0)
+
+plt.figure(figsize=(8, 6))
+ax = plt.gca()
+# Plot of stroke incidences proportion by Marital Status
+ax = marital_stroke_df_norm.plot(kind='bar', stacked=False, xlabel="", ax=ax)
+ax.set_xticklabels(['Never Been Married', 'Married/Was Married'], rotation=0)
+ax.legend(['No Stroke', 'Stroke'], title='Stroke Incidences', loc='best', bbox_to_anchor=(1, 1))
+ax.set_title('Proportion of Stroke Incidences Based on Marital Status', fontsize=16)
+
+# Text values above the bars
+for container in ax.containers:
+    ax.bar_label(container, label_type='edge', fmt='%.2f')
+
+# Chi-square test
+_, p, _, _ = chi2_contingency(marital_stroke_croostab)
+
+if p > 0.05:
+    ax.text(0, -0.2, f'Chi-Square Test:\n', transform=ax.transAxes,
+                 fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                 fontweight='bold')
+
+    ax.text(0, -0.3, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                          f'P-Value > \u03B1 ---> There is no significant association between ResidenceType and stroke',
+                 transform=ax.transAxes,
+                 fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                 bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+else:
+    ax.text(0, -0.2, f'Chi-Square Test:\n', transform=ax.transAxes,
+                 fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                 fontweight='bold')
+
+    ax.text(0, -0.3, f'\u03B1: 0.05,  P-Value: {p:.2f}\n\n'
+                          f'P-Value < \u03B1 ---> There is a significant association between ResidenceType and stroke',
+                 transform=ax.transAxes,
+                 fontsize=8, verticalalignment='bottom', horizontalalignment='left',
+                 bbox=dict(boxstyle='round,pad=0.5', edgecolor='black', facecolor='white'))
+
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(8, 6))
+ax = plt.gca()
+marital_stroke_df.plot.pie(y='ever_married', autopct='%1.1f%%', ax=ax)
+
+ax.set_title('Distribution of Stroke Incidences Based on Marital Status', fontsize=12)
+
+plt.tight_layout()
+plt.show()
+
+
+# --------------------------------------------------------------------------------------------------
 """ Stroke and ResidenceType Correlation """
 
 residence_stroke_df = df[['Residence_type', 'stroke']]

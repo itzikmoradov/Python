@@ -65,6 +65,7 @@ plt.show()
 """Stroke Age Group Correlation"""
 
 # Define a function to label age groups
+
 def age_group_label(age):
     if age < 50:
         return 'under 50'
